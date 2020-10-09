@@ -9,6 +9,22 @@
 }
 
 /**
+ * TailwindCSS Base (reset)
+ */
+
+@tailwind base;
+
+/**
+ * Appearance for iOS and Safari
+ */
+button,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  appearance: none;
+}
+
+/**
  * Popper JS
  */
 
@@ -30,11 +46,13 @@
 
 @import "~@brainhubeu/react-carousel/lib/style.css";
 
-/**
- * TailwindCSS
- */
+.BrainhubCarousel__arrows span {
+  width: 12px;
+}
 
-@tailwind base;
+/**
+ * TailwindCSS Components & Utils
+ */
 
 @tailwind components;
 
