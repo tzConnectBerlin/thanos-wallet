@@ -332,15 +332,7 @@
     }
   },
   "accountsToRemoveConstraint": {
-    "message": "Only $importedPlural$ or $ledger$ accounts can be removed.",
-    "placeholders": {
-      "importedPlural": {
-        "content": "$1"
-      },
-      "ledger": {
-        "content": "$2"
-      }
-    }
+    "message": "HD accounts cannot be removed."
   },
   "doNotSharePrivateKey": {
     "message": "$doNotShare$ this set of chars with anyone! It can be used to steal your current account.",
@@ -477,11 +469,14 @@
   "privateKeyCannotBeRevealed": {
     "message": "Private key cannot be revealed"
   },
-  "youCannotGetPrivateKeyFromLedgerAccounts": {
-    "message": "You cannot get private key from $ledger$ accounts.",
+  "getPrivateKeyConstraint": {
+    "message": "You cannot get private key from $ledger$ or $trezor$ accounts.",
     "placeholders": {
       "ledger": {
         "content": "$1"
+      },
+      "trezor": {
+        "content": "$2"
       }
     }
   },
@@ -689,6 +684,9 @@
   },
   "connectLedger": {
     "message": "Connect Ledger"
+  },
+  "connectTrezor": {
+    "message": "Connect Trezor"
   },
   "importExistingWallet": {
     "message": "Import existing Wallet"
@@ -1199,11 +1197,25 @@
       }
     }
   },
+  "defaultTrezorName": {
+    "message": "Trezor $number$",
+    "placeholders": {
+      "number": {
+        "content": "$1"
+      }
+    }
+  },
   "ledgerNameConstraint": {
+    "message": "1-16 characters, no special"
+  },
+  "trezorNameConstraint": {
     "message": "1-16 characters, no special"
   },
   "ledgerNameInputDescription": {
     "message": "What will be the name of the new Ledger account?"
+  },
+  "trezorNameInputDescription": {
+    "message": "What will be the name of the new Trezor account?"
   },
   "defaultDerivationPathLabel": {
     "message": "By default $path$ derivation is used.",
@@ -1218,6 +1230,9 @@
   },
   "addLedgerAccount": {
     "message": "Add Ledger Account"
+  },
+  "addTrezorAccount": {
+    "message": "Add Trezor account"
   },
   "firefoxLedgerConnectionError": {
     "message": "$sorry$ Connection to the $device$ device via $browser$ is temporarily $unavailable$.",
@@ -1253,5 +1268,11 @@
   },
   "generalSettingsDescription": {
     "message": "General application settings."
+  },
+  "trezorAccountType": {
+    "message": "Trezor"
+  },
+  "trezor": {
+    "message": "Trezor"
   }
 }

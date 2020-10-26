@@ -116,6 +116,12 @@ async function processRequest(
         type: ThanosMessageType.CreateLedgerAccountResponse,
       };
 
+    case ThanosMessageType.CreateTrezorAccountRequest:
+      await Actions.createTrezorAccount(req.name, req.derivationPath);
+      return {
+        type: ThanosMessageType.CreateTrezorAccountResponse,
+      };
+
     case ThanosMessageType.UpdateSettingsRequest:
       await Actions.updateSettings(req.settings);
       return {

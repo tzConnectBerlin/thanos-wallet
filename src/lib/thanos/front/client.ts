@@ -245,6 +245,20 @@ export const [ThanosClientProvider, useThanosClient] = constate(() => {
     []
   );
 
+  const createTrezorAccount = React.useCallback(
+    async (name: string, derivationPath?: string) => {
+      const res = await request({
+        type: ThanosMessageType.CreateTrezorAccountRequest,
+        name,
+        derivationPath,
+      });
+      assertResponse(
+        res.type === ThanosMessageType.CreateTrezorAccountResponse
+      );
+    },
+    []
+  );
+
   const updateSettings = React.useCallback(
     async (settings: Partial<ThanosSettings>) => {
       const res = await request({
@@ -415,6 +429,7 @@ export const [ThanosClientProvider, useThanosClient] = constate(() => {
     importMnemonicAccount,
     importFundraiserAccount,
     createLedgerAccount,
+    createTrezorAccount,
     updateSettings,
     getAllPndOps,
     removePndOps,

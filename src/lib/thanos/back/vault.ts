@@ -1,6 +1,7 @@
 import { browser } from "webextension-polyfill-ts";
 import * as Bip39 from "bip39";
 import * as Ed25519 from "ed25519-hd-key";
+import TrezorConnect from "trezor-connect";
 import * as TaquitoUtils from "@taquito/utils";
 import { InMemorySigner } from "@taquito/signer";
 import { TezosToolkit, CompositeForger, RpcForger } from "@taquito/taquito";
@@ -51,6 +52,12 @@ export class Vault {
 
   static async setup(password: string) {
     const passKey = await Vault.toValidPassKey(password);
+    await TrezorConnect.init({
+      manifest: {
+        appUrl: "https://thanoswallet.com",
+        email: "keshan3262@gmail.com",
+      },
+    });
     return withError("Failed to unlock wallet", async () => {
       await Vault.runMigrations(passKey);
       return new Vault(passKey);
@@ -333,6 +340,51 @@ export class Vault {
     });
   }
 
+  async createTrezorAccount(name: string, derivationPath?: string) {
+    return withError("Failed to connect Trezor account", async () => {
+      if (!derivationPath) derivationPath = getMainDerivationPath(0);
+      return withError("Failed to import account", async () => {
+        const result = await TrezorConnect.tezosGetPublicKey({
+          path: derivationPath!,
+          showOnTrezor: true,
+        });
+
+        if (!result.success) {
+          throw new PublicError(result.payload.error);
+        }
+
+        const { publicKey } = result.payload;
+        const result2 = await TrezorConnect.tezosGetAddress({
+          path: derivationPath!,
+        });
+
+        if (!result2.success) {
+          throw new PublicError(result2.payload.error);
+        }
+
+        const { address: accPublicKeyHash } = result2.payload;
+        const newAccount: ThanosAccount = {
+          type: ThanosAccountType.Trezor,
+          name,
+          publicKeyHash: accPublicKeyHash,
+          derivationPath: derivationPath!,
+        };
+        const allAccounts = await this.fetchAccounts();
+        const newAllAccounts = concatAccount(allAccounts, newAccount);
+
+        await encryptAndSaveMany(
+          [
+            [accPubKeyStrgKey(accPublicKeyHash), publicKey],
+            [accountsStrgKey, newAllAccounts],
+          ],
+          this.passKey
+        );
+
+        return newAllAccounts;
+      });
+    });
+  }
+
   async editAccountName(accPublicKeyHash: string, name: string) {
     return withError("Failed to edit account name", async () => {
       const allAccounts = await this.fetchAccounts();
@@ -548,6 +600,14 @@ async function createLedgerSigner(
     publicKeyHash
   );
 }
+
+/* async function createTrezorSigner(
+  derivationPath: string,
+  publicKey?: string,
+  publicKeyHash?: string
+) {
+  const transport = await Trezor
+} */
 
 function seedToHDPrivateKey(seed: Buffer, hdAccIndex: number) {
   return seedToPrivateKey(deriveSeed(seed, getMainDerivationPath(hdAccIndex)));

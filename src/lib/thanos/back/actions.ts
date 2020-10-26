@@ -183,6 +183,16 @@ export function craeteLedgerAccount(name: string, derivationPath?: string) {
   });
 }
 
+export function createTrezorAccount(name: string, derivationPath?: string) {
+  return withUnlocked(async ({ vault }) => {
+    const updatedAccounts = await vault.createTrezorAccount(
+      name,
+      derivationPath
+    );
+    accountsUpdated(updatedAccounts);
+  });
+}
+
 export function updateSettings(settings: Partial<ThanosSettings>) {
   return withUnlocked(async ({ vault }) => {
     const updatedSettings = await vault.updateSettings(settings);

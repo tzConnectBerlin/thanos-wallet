@@ -24,6 +24,7 @@ import { ReactComponent as CodeAltIcon } from "app/icons/code-alt.svg";
 import { ReactComponent as LinkIcon } from "app/icons/link.svg";
 import { ReactComponent as SettingsIcon } from "app/icons/settings.svg";
 import { ReactComponent as MaximiseIcon } from "app/icons/maximise.svg";
+import trezorIcon from "app/misc/trezor.png";
 
 type ExcludesFalse = <T>(x: T | false) => x is T;
 type AccountDropdownProps = PopperRenderProps;
@@ -78,6 +79,15 @@ const AccountDropdown: React.FC<AccountDropdownProps> = ({
           Icon: LinkIcon,
           i18nKey: "connectLedger",
           linkTo: "/connect-ledger",
+          onClick: closeDropdown,
+        },
+        {
+          key: "connect-trezor",
+          Icon: (props: React.HTMLAttributes<unknown>) => (
+            <img alt="Trezor logo" src={trezorIcon} {...props} />
+          ),
+          i18nKey: "connectTrezor",
+          linkTo: "/connect-trezor",
           onClick: closeDropdown,
         },
         network.type === "test" && {

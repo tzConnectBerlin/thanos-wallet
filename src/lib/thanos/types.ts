@@ -36,10 +36,16 @@ export enum ThanosStatus {
 export type ThanosAccount =
   | ThanosHDAccount
   | ThanosImportedAccount
-  | ThanosLedgerAccount;
+  | ThanosLedgerAccount
+  | ThanosTrezorAccount;
 
 export interface ThanosLedgerAccount extends ThanosAccountBase {
   type: ThanosAccountType.Ledger;
+  derivationPath: string;
+}
+
+export interface ThanosTrezorAccount extends ThanosAccountBase {
+  type: ThanosAccountType.Trezor;
   derivationPath: string;
 }
 
@@ -64,6 +70,8 @@ export enum ThanosAccountType {
   HD,
   Imported,
   Ledger,
+  ManagedKT,
+  Trezor,
 }
 
 export interface ThanosNetwork {
@@ -243,6 +251,8 @@ export enum ThanosMessageType {
   ImportFundraiserAccountResponse = "THANOS_IMPORT_FUNDRAISER_ACCOUNT_RESPONSE",
   CreateLedgerAccountRequest = "THANOS_CREATE_LEDGER_ACCOUNT_REQUEST",
   CreateLedgerAccountResponse = "THANOS_CREATE_LEDGER_ACCOUNT_RESPONSE",
+  CreateTrezorAccountRequest = "THANOS_CREATE_TREZOR_ACCOUNT_REQUEST",
+  CreateTrezorAccountResponse = "THANOS_CREATE_TREZOR_ACCOUNT_RESPONSE",
   UpdateSettingsRequest = "THANOS_UPDATE_SETTINGS_REQUEST",
   UpdateSettingsResponse = "THANOS_UPDATE_SETTINGS_RESPONSE",
   GetAllPndOpsRequest = "THANOS_GET_ALL_PND_OPS_REQUEST",
@@ -290,6 +300,7 @@ export type ThanosRequest =
   | ThanosImportMnemonicAccountRequest
   | ThanosImportFundraiserAccountRequest
   | ThanosCreateLedgerAccountRequest
+  | ThanosCreateTrezorAccountRequest
   | ThanosOperationsRequest
   | ThanosSignRequest
   | ThanosConfirmationRequest
@@ -319,6 +330,7 @@ export type ThanosResponse =
   | ThanosImportMnemonicAccountResponse
   | ThanosImportFundraiserAccountResponse
   | ThanosCreateLedgerAccountResponse
+  | ThanosCreateTrezorAccountResponse
   | ThanosOperationsResponse
   | ThanosSignResponse
   | ThanosConfirmationResponse
@@ -491,6 +503,16 @@ export interface ThanosCreateLedgerAccountRequest extends ThanosMessageBase {
 
 export interface ThanosCreateLedgerAccountResponse extends ThanosMessageBase {
   type: ThanosMessageType.CreateLedgerAccountResponse;
+}
+
+export interface ThanosCreateTrezorAccountRequest extends ThanosMessageBase {
+  type: ThanosMessageType.CreateTrezorAccountRequest;
+  name: string;
+  derivationPath?: string;
+}
+
+export interface ThanosCreateTrezorAccountResponse extends ThanosMessageBase {
+  type: ThanosMessageType.CreateTrezorAccountResponse;
 }
 
 export interface ThanosUpdateSettingsRequest extends ThanosMessageBase {

@@ -32,9 +32,9 @@ dotenv.config();
 const THANOS_WALLET = /^THANOS_WALLET_/i;
 const {
   NODE_ENV = "development",
-  TARGET_BROWSER = "chrome",
-  SOURCE_MAP: SOURCE_MAP_ENV,
-  IMAGE_INLINE_SIZE_LIMIT: IMAGE_INLINE_SIZE_LIMIT_ENV = "10000",
+    TARGET_BROWSER = "chrome",
+    SOURCE_MAP: SOURCE_MAP_ENV,
+    IMAGE_INLINE_SIZE_LIMIT: IMAGE_INLINE_SIZE_LIMIT_ENV = "10000",
 } = process.env;
 const VERSION = pkg.version;
 const SOURCE_MAP = NODE_ENV !== "production" && SOURCE_MAP_ENV !== "false";
@@ -61,8 +61,7 @@ const OUTPUT_PACKED_PATH = path.join(
   OUTPUT_PATH,
   `${TARGET_BROWSER}.${PACKED_EXTENSION}`
 );
-const HTML_TEMPLATES = [
-  {
+const HTML_TEMPLATES = [{
     path: path.join(PUBLIC_PATH, "popup.html"),
     chunks: ["popup"],
   },
@@ -78,6 +77,10 @@ const HTML_TEMPLATES = [
     path: path.join(PUBLIC_PATH, "options.html"),
     chunks: ["options"],
   },
+  {
+    path: path.join(PUBLIC_PATH, "usb-permissions.html"),
+    chunks: ["usbPermissions"],
+  },
 ];
 const ENTRIES = {
   popup: path.join(SOURCE_PATH, "popup.tsx"),
@@ -86,6 +89,11 @@ const ENTRIES = {
   options: path.join(SOURCE_PATH, "options.tsx"),
   background: path.join(SOURCE_PATH, "background.ts"),
   contentScript: path.join(SOURCE_PATH, "contentScript.ts"),
+  trezorContentScript: path.join(
+    SOURCE_PATH,
+    "vendor/trezor/content-script.ts"
+  ),
+  usbPermissions: path.join(SOURCE_PATH, "vendor/trezor/usbPermissions.ts"),
 };
 
 const EXTENSION_ENTRIES = {
@@ -98,7 +106,7 @@ const MANIFEST_PATH = path.join(PUBLIC_PATH, "manifest.json");
 const MODULE_FILE_EXTENSIONS = [".js", ".mjs", ".jsx", ".ts", ".tsx", ".json"];
 const ADDITIONAL_MODULE_PATHS = [
   tsConfig.compilerOptions.baseUrl &&
-    path.join(CWD_PATH, tsConfig.compilerOptions.baseUrl),
+  path.join(CWD_PATH, tsConfig.compilerOptions.baseUrl),
 ].filter(Boolean);
 const CSS_REGEX = /\.css$/;
 const CSS_MODULE_REGEX = /\.module\.css$/;
@@ -120,38 +128,35 @@ module.exports = {
   resolve: {
     modules: [NODE_MODULES_PATH, ...ADDITIONAL_MODULE_PATHS],
     extensions: MODULE_FILE_EXTENSIONS,
-    plugins: [
-      {
-        apply(resolver) {
-          const target = resolver.ensureHook("resolve");
+    plugins: [{
+      apply(resolver) {
+        const target = resolver.ensureHook("resolve");
 
-          resolver
-            .getHook("resolve")
-            .tapAsync(
-              "TaquitoSignerResolverPlugin",
-              (request, resolveContext, callback) => {
-                if (
-                  /@taquito\/signer$/.test(request.request) &&
-                  /@taquito\/taquito/.test(request.context.issuer)
-                ) {
-                  return resolver.doResolve(
-                    target,
-                    {
-                      ...request,
-                      request: "lib/taquito-signer-stub",
-                    },
-                    null,
-                    resolveContext,
-                    callback
-                  );
-                }
-
-                callback();
+        resolver
+          .getHook("resolve")
+          .tapAsync(
+            "TaquitoSignerResolverPlugin",
+            (request, resolveContext, callback) => {
+              if (
+                /@taquito\/signer$/.test(request.request) &&
+                /@taquito\/taquito/.test(request.context.issuer)
+              ) {
+                return resolver.doResolve(
+                  target, {
+                    ...request,
+                    request: "lib/taquito-signer-stub",
+                  },
+                  null,
+                  resolveContext,
+                  callback
+                );
               }
-            );
-        },
+
+              callback();
+            }
+          );
       },
-    ],
+    }, ],
   },
 
   module: {
@@ -166,17 +171,15 @@ module.exports = {
         test: /\.(js|mjs|jsx|ts|tsx)$/,
         enforce: "pre",
         include: SOURCE_PATH,
-        use: [
-          {
-            options: {
-              cache: true,
-              formatter: require.resolve("react-dev-utils/eslintFormatter"),
-              eslintPath: require.resolve("eslint"),
-              resolvePluginsRelativeTo: __dirname,
-            },
-            loader: require.resolve("eslint-loader"),
+        use: [{
+          options: {
+            cache: true,
+            formatter: require.resolve("react-dev-utils/eslintFormatter"),
+            eslintPath: require.resolve("eslint"),
+            resolvePluginsRelativeTo: __dirname,
           },
-        ],
+          loader: require.resolve("eslint-loader"),
+        }, ],
       },
 
       {
@@ -211,8 +214,7 @@ module.exports = {
                   {
                     loaderMap: {
                       svg: {
-                        ReactComponent:
-                          "@svgr/webpack?-svgo,+titleProp,+ref![path]",
+                        ReactComponent: "@svgr/webpack?-svgo,+titleProp,+ref![path]",
                       },
                     },
                   },
@@ -343,28 +345,28 @@ module.exports = {
 
     ...HTML_TEMPLATES.map(
       (htmlTemplate) =>
-        new HtmlWebpackPlugin({
-          template: htmlTemplate.path,
-          filename: path.basename(htmlTemplate.path),
-          chunks: [...htmlTemplate.chunks, "commons"],
-          inject: "body",
-          ...(NODE_ENV === "production"
-            ? {
-                minify: {
-                  removeComments: true,
-                  collapseWhitespace: true,
-                  removeRedundantAttributes: true,
-                  useShortDoctype: true,
-                  removeEmptyAttributes: true,
-                  removeStyleLinkTypeAttributes: true,
-                  keepClosingSlash: true,
-                  minifyJS: true,
-                  minifyCSS: true,
-                  minifyURLs: true,
-                },
-              }
-            : {}),
-        })
+      new HtmlWebpackPlugin({
+        template: htmlTemplate.path,
+        filename: path.basename(htmlTemplate.path),
+        chunks: [...htmlTemplate.chunks, "commons"],
+        inject: "body",
+        ...(NODE_ENV === "production" ?
+          {
+            minify: {
+              removeComments: true,
+              collapseWhitespace: true,
+              removeRedundantAttributes: true,
+              useShortDoctype: true,
+              removeEmptyAttributes: true,
+              removeStyleLinkTypeAttributes: true,
+              keepClosingSlash: true,
+              minifyJS: true,
+              minifyCSS: true,
+              minifyURLs: true,
+            },
+          } :
+          {}),
+      })
     ),
 
     new ForkTsCheckerWebpackPlugin({
@@ -386,8 +388,7 @@ module.exports = {
       formatter: typescriptFormatter,
     }),
 
-    new CopyWebpackPlugin([
-      {
+    new CopyWebpackPlugin([{
         from: PUBLIC_PATH,
         to: OUTPUT_PATH,
       },
@@ -407,12 +408,12 @@ module.exports = {
 
     // plugin to enable browser reloading in development mode
     NODE_ENV === "development" &&
-      new ExtensionReloader({
-        port: 9090,
-        reloadPage: true,
-        // manifest: path.join(OUTPUT_PATH, "manifest.json"),
-        entries: EXTENSION_ENTRIES,
-      }),
+    new ExtensionReloader({
+      port: 9090,
+      reloadPage: true,
+      // manifest: path.join(OUTPUT_PATH, "manifest.json"),
+      entries: EXTENSION_ENTRIES,
+    }),
   ].filter(Boolean),
 
   optimization: {
@@ -455,16 +456,16 @@ module.exports = {
       new OptimizeCSSAssetsPlugin({
         cssProcessorOptions: {
           parser: safePostCssParser,
-          map: SOURCE_MAP
-            ? {
-                // `inline: false` forces the sourcemap to be output into a
-                // separate file
-                inline: false,
-                // `annotation: true` appends the sourceMappingURL to the end of
-                // the css file, helping the browser find the sourcemap
-                annotation: true,
-              }
-            : false,
+          map: SOURCE_MAP ?
+            {
+              // `inline: false` forces the sourcemap to be output into a
+              // separate file
+              inline: false,
+              // `annotation: true` appends the sourceMappingURL to the end of
+              // the css file, helping the browser find the sourcemap
+              annotation: true,
+            } :
+            false,
         },
         cssProcessorPluginOptions: {
           preset: ["default", { minifyFontValues: { removeQuotes: false } }],
@@ -497,8 +498,7 @@ module.exports = {
 };
 
 function getStyleLoaders(cssOptions = {}) {
-  return [
-    {
+  return [{
       loader: MiniCssExtractPlugin.loader,
       options: {
         publicPath: "../",
@@ -512,18 +512,17 @@ function getStyleLoaders(cssOptions = {}) {
       loader: require.resolve("postcss-loader"),
       options: {
         ident: "postcss",
-        plugins: () =>
-          [
-            require("postcss-flexbugs-fixes"),
-            require("postcss-preset-env")({
-              autoprefixer: {
-                flexbox: "no-2009",
-              },
-              stage: 3,
-            }),
-            require("tailwindcss"),
-            require("autoprefixer"),
-          ].filter(Boolean),
+        plugins: () => [
+          require("postcss-flexbugs-fixes"),
+          require("postcss-preset-env")({
+            autoprefixer: {
+              flexbox: "no-2009",
+            },
+            stage: 3,
+          }),
+          require("tailwindcss"),
+          require("autoprefixer"),
+        ].filter(Boolean),
         sourceMap: SOURCE_MAP,
       },
     },
