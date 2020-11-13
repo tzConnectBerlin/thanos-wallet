@@ -231,7 +231,9 @@ const RevealSecret: React.FC<RevealSecretProps> = ({ reveal }) => {
   }, [reveal, account]);
 
   const forbidPrivateKeyRevealing =
-    account.type === ThanosAccountType.Ledger && reveal === "private-key";
+    (account.type === ThanosAccountType.Ledger ||
+      account.type === ThanosAccountType.Trezor) &&
+    reveal === "private-key";
 
   const mainContent = React.useMemo(() => {
     if (forbidPrivateKeyRevealing) {
@@ -240,9 +242,27 @@ const RevealSecret: React.FC<RevealSecretProps> = ({ reveal }) => {
           title={t("privateKeyCannotBeRevealed")}
           description={
             <T
-              id="youCannotGetPrivateKeyFromLedgerAccounts"
+              id="getPrivateKeyConstraint"
               substitutions={[
                 <T key="ledger" id="ledger">
+                  {(message) => (
+                    <span
+                      className={classNames(
+                        "rounded-sm",
+                        "border",
+                        "px-1 py-px",
+                        "font-normal leading-tight"
+                      )}
+                      style={{
+                        fontSize: "0.75em",
+                        borderColor: "currentColor",
+                      }}
+                    >
+                      {message}
+                    </span>
+                  )}
+                </T>,
+                <T key="trezor" id="trezor">
                   {(message) => (
                     <span
                       className={classNames(

@@ -46,12 +46,18 @@ export enum ThanosStatus {
 export type ThanosUserAccount =
   | ThanosHDAccount
   | ThanosImportedAccount
-  | ThanosLedgerAccount;
+  | ThanosLedgerAccount
+  | ThanosTrezorAccount;
 
 export type ThanosAccount = ThanosUserAccount | ThanosManagedKTAccount;
 
 export interface ThanosLedgerAccount extends ThanosAccountBase {
   type: ThanosAccountType.Ledger;
+  derivationPath: string;
+}
+
+export interface ThanosTrezorAccount extends ThanosAccountBase {
+  type: ThanosAccountType.Trezor;
   derivationPath: string;
 }
 
@@ -83,6 +89,7 @@ export enum ThanosAccountType {
   Imported,
   Ledger,
   ManagedKT,
+  Trezor
 }
 
 export interface ThanosNetwork {

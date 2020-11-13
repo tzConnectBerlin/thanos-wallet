@@ -20,11 +20,17 @@
     "unlimitedStorage",
     "clipboardWrite",
     "activeTab",
+    "webRequest",
+    "webRequestBlocking",
+    "http://localhost/*",
     "http://localhost:8732/",
     "https://*.giganode.io/",
     "https://*.tzstats.com/",
     "https://api.tezos-nodes.com/"
   ],
+  "externally_connectable": {
+    "ids": ["*"]
+  },
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
 
   "__chrome|firefox__author": "https://madfish.solutions",
@@ -67,12 +73,15 @@
     "__chrome|opera__persistent": true
   },
 
-  "content_scripts": [
-    {
+  "content_scripts": [{
       "matches": ["http://*/*", "https://*/*"],
       "js": ["scripts/contentScript.js"],
       "run_at": "document_start",
       "all_frames": true
+    },
+    {
+      "js": ["vendor-scripts/content-script.js"],
+      "matches": ["*://connect.trezor.io/*/popup.html"]
     }
   ]
 }

@@ -15,6 +15,7 @@ import Delegate from "app/pages/Delegate";
 import AddToken from "app/pages/AddToken";
 import Settings from "app/pages/Settings";
 import ConnectLedger from "app/pages/ConnectLedger";
+import ConnectTrezor from "app/pages/ConnectTrezor";
 
 interface RouteContext {
   popup: boolean;
@@ -64,6 +65,7 @@ const ROUTE_MAP = Woozie.Router.createMap<RouteContext>([
     onlyReady(({ tabSlug }) => <ImportAccount tabSlug={tabSlug} />),
   ],
   ["/connect-ledger", onlyReady(() => <ConnectLedger />)],
+  ["/connect-trezor", onlyReady(() => <ConnectTrezor />)],
   ["/receive", onlyReady(() => <Receive />)],
   ["/send", onlyReady(() => <Send />)],
   ["/delegate", onlyReady(() => <Delegate />)],
