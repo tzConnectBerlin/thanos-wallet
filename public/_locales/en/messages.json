@@ -14,8 +14,11 @@
   "importAccount": {
     "message": "Import account"
   },
-  "importFaucetFile": {
-    "message": "Import Faucet file"
+  "faucetFileTitle": {
+    "message": "Faucet File"
+  },
+  "faucetFile": {
+    "message": "Faucet file"
   },
   "settings": {
     "message": "Settings"
@@ -117,6 +120,14 @@
     "message": "Copy \"$tokenSymbol$\" address",
     "placeholders": {
       "tokenSymbol": {
+        "content": "$1"
+      }
+    }
+  },
+  "originLabel": {
+    "message": "Origin: $origin$",
+    "placeholders": {
+      "origin": {
         "content": "$1"
       }
     }
@@ -232,6 +243,9 @@
   "comingSoonComment": {
     "message": "(coming soon)"
   },
+  "soon": {
+    "message": "soon"
+  },
   "required": {
     "message": "Required"
   },
@@ -244,8 +258,11 @@
   "tokenContractPlaceholder": {
     "message": "e.g. KT1v9CmPy..."
   },
+  "lambdaContractPlaceholder": {
+    "message": "e.g. KT1v9CmPy..."
+  },
   "tokenSymbolPatternDescription": {
-    "message": "Only a-z, A-Z, 0-9 chars allowed, 2-7 length"
+    "message": "Only a-z, A-Z, 0-9 chars allowed, 2-5 length"
   },
   "symbol": {
     "message": "Symbol"
@@ -310,12 +327,7 @@
     "message": "Only KT... contract address allowed"
   },
   "operationHash": {
-    "message": "Operation Hash: $hash$",
-    "placeholders": {
-      "hash": {
-        "content": "$1"
-      }
-    }
+    "message": "Operation Hash"
   },
   "alert": {
     "message": "Alert"
@@ -325,6 +337,14 @@
   },
   "defaultAccountName": {
     "message": "Account $accountNumber$",
+    "placeholders": {
+      "accountNumber": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultManagedKTAccountName": {
+    "message": "Managed KT $accountNumber$",
     "placeholders": {
       "accountNumber": {
         "content": "$1"
@@ -605,7 +625,12 @@
     "message": "Something went wrong"
   },
   "faucetFileInputPrompt": {
-    "message": "Drag & drop a file or select it manually by clicking on the area below. You can download it from "
+    "message": "Drag & drop a file or select it manually by clicking on the area below. You can download it from $link$.",
+    "placeholders": {
+      "link": {
+        "content": "$1"
+      }
+    }
   },
   "processing": {
     "message": "Processing..."
@@ -650,7 +675,7 @@
     "message": "Activate Account"
   },
   "activateAccountDescription": {
-    "message": "Use this section to activate your selected account by providing secret phrase. It may be necessary for ICO/Fundraiser or testnet faucet accounts."
+    "message": "It may be necessary for ICO/Fundraiser or testnet faucet accounts."
   },
   "removeAccount": {
     "message": "Remove Account"
@@ -781,6 +806,15 @@
     "message": "Enabled"
   },
   "dAppsInteractionDisabled": {
+    "message": "Disabled"
+  },
+  "enablePopup": {
+    "message": "Enable popup"
+  },
+  "popupEnabled": {
+    "message": "Enabled"
+  },
+  "popupDisabled": {
     "message": "Disabled"
   },
   "delete": {
@@ -996,6 +1030,9 @@
   },
   "pending": {
     "message": "pending..."
+  },
+  "backtracked": {
+    "message": "backtracked"
   },
   "operationSuccessfullyProcessed": {
     "message": "$type$ successfully processed and confirmed!",
@@ -1261,18 +1298,138 @@
     "message": "Upload"
   },
   "languageAndCountry": {
-    "message": "Language and country"
+    "message": "Language"
   },
   "generalSettings": {
-    "message": "General Settings"
+    "message": "General"
   },
   "generalSettingsDescription": {
-    "message": "General application settings."
+    "message": "Here you can manage languages preferences and display mode."
   },
   "trezorAccountType": {
     "message": "Trezor"
   },
   "trezor": {
     "message": "Trezor"
+  },
+  "lambdaContract": {
+    "message": "Lambda View contract"
+  },
+  "someLambda": {
+    "message": "Lambda View: $lambda$",
+    "placeholders": {
+      "lambda": {
+        "content": "$1"
+      }
+    }
+  },
+  "noLambdaWarningContent": {
+    "message": "No Lambda View contract was specified. Some functionality may not work without it. Press 'Add network' button if you want to proceed."
+  },
+  "noActiveNetLambdaWarningContent": {
+    "message": "No Lambda View contract for the current network was specified. You can add it in the form below or click 'Deploy new' to deploy a new one and add automatically."
+  },
+  "add": {
+    "message": "Add"
+  },
+  "deployNew": {
+    "message": "Deploy new"
+  },
+  "managedKTAccount": {
+    "message": "Managed KT"
+  },
+  "activationOperationType": {
+    "message": "Activation"
+  },
+  "youAreNotContractManager": {
+    "message": "You are not a contract manager"
+  },
+  "contract": {
+    "message": "Contract"
+  },
+  "contractAddressInputDescription": {
+    "message": "Address of the contract to connect."
+  },
+  "contractAddressInputPlaceholder": {
+    "message": "e.g. KT1a9w1S7hN5s..."
+  },
+  "addKnownManagedContract": {
+    "message": "Add known Managed contract"
+  },
+  "clickOnContractToImport": {
+    "message": "Click on Contract you want to import."
+  },
+  "notContractAddress": {
+    "message": "Not a contract address"
+  },
+  "contractAlreadyImported": {
+    "message": "This contract has already been imported"
+  },
+  "waitWhileContractBeingDeployed": {
+    "message": "Please don't leave this page or close window while contract is being deployed, it may take a while. The form and this alert will disappear as soon as it is successfully deployed."
+  },
+  "justAMinute": {
+    "message": "Just a minute..."
+  },
+  "referredByTokenContactAddressInvalid": {
+    "message": "Contract address $address$, which is referred by token contract to, is invalid.",
+    "placeholders": {
+      "address": {
+        "content": "$1"
+      }
+    }
+  },
+  "someNetworkIsNotCurrent": {
+    "message": "$network$ network was specified, which is not current network",
+    "placeholders": {
+      "network": {
+        "content": "$1"
+      }
+    }
+  },
+  "someNetworkWithChainIdIsNotCurrent": {
+    "message": "Chain ID $chainId$ was specified, which is not chain ID of current network",
+    "placeholders": {
+      "chainId": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupSettings": {
+    "message": "Popup mode"
+  },
+  "popupSettingsDescription": {
+    "message": "Here you can configure the popup which appears on plugin's icon click in extensions panel."
+  },
+  "managedContract": {
+    "message": "Managed Contract"
+  },
+  "referredByTokenContractNotFound": {
+    "message": "Contract $address$, which is referred by token contract to, was not found.",
+    "placeholders": {
+      "address": {
+        "content": "$1"
+      }
+    }
+  },
+  "tokenContractNotFound": {
+    "message": "The contract was not found."
+  },
+  "failedToParseMetadata": {
+    "message": "Failed to parse metadata"
+  },
+  "unknownParseErrorOccurred": {
+    "message": "An unknown parsing error occurred."
+  },
+  "errorWhileFetchingUrl": {
+    "message": "Error occurred while fetching from $url$",
+    "placeholders": {
+      "url": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidManagedContract": {
+    "message": "Invalid managed contract"
   }
 }

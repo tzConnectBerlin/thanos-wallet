@@ -27,17 +27,29 @@ export interface ThanosState {
   settings: ThanosSettings | null;
 }
 
+export enum ThanosChainId {
+  Mainnet = "NetXdQprcVkpaWU",
+  Carthagenet = "NetXjD3HPJJjmcd",
+  Delphinet = "NetXm8tYqnMWky1",
+}
+
+export function isKnownChainId(chainId: string): chainId is ThanosChainId {
+  return Object.values(ThanosChainId).includes(chainId as ThanosChainId);
+}
+
 export enum ThanosStatus {
   Idle,
   Locked,
   Ready,
 }
 
-export type ThanosAccount =
+export type ThanosUserAccount =
   | ThanosHDAccount
   | ThanosImportedAccount
   | ThanosLedgerAccount
   | ThanosTrezorAccount;
+
+export type ThanosAccount = ThanosUserAccount | ThanosManagedKTAccount;
 
 export interface ThanosLedgerAccount extends ThanosAccountBase {
   type: ThanosAccountType.Ledger;
@@ -56,6 +68,12 @@ export interface ThanosImportedAccount extends ThanosAccountBase {
 export interface ThanosHDAccount extends ThanosAccountBase {
   type: ThanosAccountType.HD;
   hdIndex: number;
+}
+
+export interface ThanosManagedKTAccount extends ThanosAccountBase {
+  type: ThanosAccountType.ManagedKT;
+  chainId: string;
+  owner: string;
 }
 
 export interface ThanosAccountBase {
@@ -80,6 +98,7 @@ export interface ThanosNetwork {
   nameI18nKey?: string;
   description: string;
   descriptionI18nKey?: string;
+  lambdaContract?: string;
   type: ThanosNetworkType;
   rpcBaseURL: string;
   color: string;
@@ -140,6 +159,7 @@ export type ThanosNetworkType = "main" | "test";
 
 export interface ThanosSettings {
   customNetworks?: ThanosNetwork[];
+  lambdaContracts?: Record<string, string>;
 }
 
 export enum ThanosSharedStorageKey {
@@ -249,6 +269,8 @@ export enum ThanosMessageType {
   ImportMnemonicAccountResponse = "THANOS_IMPORT_MNEMONIC_ACCOUNT_RESPONSE",
   ImportFundraiserAccountRequest = "THANOS_IMPORT_FUNDRAISER_ACCOUNT_REQUEST",
   ImportFundraiserAccountResponse = "THANOS_IMPORT_FUNDRAISER_ACCOUNT_RESPONSE",
+  ImportManagedKTAccountRequest = "THANOS_IMPORT_MANAGED_KT_ACCOUNT_REQUEST",
+  ImportManagedKTAccountResponse = "THANOS_IMPORT_MANAGED_KT_ACCOUNT_RESPONSE",
   CreateLedgerAccountRequest = "THANOS_CREATE_LEDGER_ACCOUNT_REQUEST",
   CreateLedgerAccountResponse = "THANOS_CREATE_LEDGER_ACCOUNT_RESPONSE",
   CreateTrezorAccountRequest = "THANOS_CREATE_TREZOR_ACCOUNT_REQUEST",
@@ -299,6 +321,7 @@ export type ThanosRequest =
   | ThanosImportAccountRequest
   | ThanosImportMnemonicAccountRequest
   | ThanosImportFundraiserAccountRequest
+  | ThanosImportManagedKTAccountRequest
   | ThanosCreateLedgerAccountRequest
   | ThanosCreateTrezorAccountRequest
   | ThanosOperationsRequest
@@ -329,6 +352,7 @@ export type ThanosResponse =
   | ThanosImportAccountResponse
   | ThanosImportMnemonicAccountResponse
   | ThanosImportFundraiserAccountResponse
+  | ThanosImportManagedKTAccountResponse
   | ThanosCreateLedgerAccountResponse
   | ThanosCreateTrezorAccountResponse
   | ThanosOperationsResponse
@@ -493,6 +517,18 @@ export interface ThanosImportFundraiserAccountRequest
 export interface ThanosImportFundraiserAccountResponse
   extends ThanosMessageBase {
   type: ThanosMessageType.ImportFundraiserAccountResponse;
+}
+
+export interface ThanosImportManagedKTAccountRequest extends ThanosMessageBase {
+  type: ThanosMessageType.ImportManagedKTAccountRequest;
+  address: string;
+  chainId: string;
+  owner: string;
+}
+
+export interface ThanosImportManagedKTAccountResponse
+  extends ThanosMessageBase {
+  type: ThanosMessageType.ImportManagedKTAccountResponse;
 }
 
 export interface ThanosCreateLedgerAccountRequest extends ThanosMessageBase {

@@ -3,13 +3,16 @@ import constate from "constate";
 import { TezosToolkit } from "@taquito/taquito";
 import {
   ReadyThanosState,
+  ThanosAccountType,
   ThanosStatus,
   ThanosState,
   ThanosAsset,
+  getClient,
   usePassiveStorage,
   useThanosClient,
-  domainsResolverFactory,
+  loadChainId,
 } from "lib/thanos/front";
+import { useRetryableSWR } from "lib/swr";
 
 export enum ActivationStatus {
   ActivationRequestSent,
@@ -26,7 +29,7 @@ export const [
   useAccount,
   useSettings,
   useTezos,
-  useTezosDomains,
+  useTezosDomainsClient,
 ] = constate(
   useReadyThanos,
   (v) => v.allNetworks,
@@ -37,7 +40,7 @@ export const [
   (v) => v.account,
   (v) => v.settings,
   (v) => v.tezos,
-  (v) => v.tezosDomains
+  (v) => v.tezosDomainsClient
 );
 
 function useReadyThanos() {
@@ -108,25 +111,29 @@ function useReadyThanos() {
    */
 
   const tezos = React.useMemo(() => {
-    const checksum = [network.id, accountPkh].join("_");
-    const t = new ReactiveTezosToolkit(checksum);
+    const checksum = [network.id, account.publicKeyHash].join("_");
     const rpc = network.rpcBaseURL;
-    const signer = createTaquitoSigner(accountPkh);
-    const wallet = createTaquitoWallet(accountPkh, rpc);
-    t.setProvider({ rpc, signer, wallet });
-    return t;
-  }, [createTaquitoSigner, createTaquitoWallet, network, accountPkh]);
+    const pkh =
+      account.type === ThanosAccountType.ManagedKT
+        ? account.owner
+        : account.publicKeyHash;
 
-  const tezosDomains = React.useMemo(
-    () => domainsResolverFactory(tezos, network.id),
-    [tezos, network.id]
-  );
+    const t = new ReactiveTezosToolkit(rpc, checksum, network.lambdaContract);
+    t.setSignerProvider(createTaquitoSigner(pkh));
+    t.setWalletProvider(createTaquitoWallet(pkh, rpc));
+    return t;
+  }, [createTaquitoSigner, createTaquitoWallet, network, account]);
 
   React.useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       (window as any).tezos = tezos;
     }
   }, [tezos]);
+
+  /**
+   * Tezos domains
+   */
+  const tezosDomainsClient = React.useMemo(() => getClient(networkId, tezos), [networkId, tezos]);
 
   return {
     allNetworks,
@@ -141,8 +148,60 @@ function useReadyThanos() {
 
     settings,
     tezos,
-    tezosDomains,
+    tezosDomainsClient,
   };
+}
+
+export function useChainId(suspense?: boolean) {
+  const tezos = useTezos();
+
+  const rpcUrl = React.useMemo(() => tezos.rpc.getRpcUrl(), [tezos]);
+
+  const fetchChainId = React.useCallback(async () => {
+    try {
+      return await loadChainId(rpcUrl);
+    } catch {
+      return null;
+    }
+  }, [rpcUrl]);
+
+  const { data: lazyChainId = null } = useRetryableSWR(
+    ["lazy-chain-id", tezos.checksum],
+    fetchChainId,
+    { revalidateOnFocus: false, suspense }
+  );
+
+  return React.useMemo(() => lazyChainId, [lazyChainId]);
+}
+
+export function useRelevantAccounts(withManagedKT = true) {
+  const allAccounts = useAllAccounts();
+  const account = useAccount();
+  const setAccountPkh = useSetAccountPkh();
+  const lazyChainId = useChainId();
+
+  const relevantAccounts = React.useMemo(
+    () =>
+      allAccounts.filter((acc) =>
+        acc.type === ThanosAccountType.ManagedKT
+          ? withManagedKT && acc.chainId === lazyChainId
+          : true
+      ),
+    [allAccounts, lazyChainId, withManagedKT]
+  );
+
+  React.useEffect(() => {
+    if (
+      relevantAccounts.every(
+        (a) => a.publicKeyHash !== account.publicKeyHash
+      ) &&
+      lazyChainId
+    ) {
+      setAccountPkh(relevantAccounts[0].publicKeyHash);
+    }
+  }, [relevantAccounts, account, setAccountPkh, lazyChainId]);
+
+  return React.useMemo(() => relevantAccounts, [relevantAccounts]);
 }
 
 export const [ThanosRefsProvider, useAllAssetsRef] = constate(
@@ -160,8 +219,12 @@ function useRefs() {
 }
 
 export class ReactiveTezosToolkit extends TezosToolkit {
-  constructor(public checksum: string) {
-    super();
+  constructor(
+    rpc: string,
+    public checksum: string,
+    public lambdaContract?: string
+  ) {
+    super(rpc);
   }
 }
 

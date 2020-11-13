@@ -110,16 +110,16 @@ async function processRequest(
         type: ThanosMessageType.ImportFundraiserAccountResponse,
       };
 
+    case ThanosMessageType.ImportManagedKTAccountRequest:
+      await Actions.importManagedKTAccount(req.address, req.chainId, req.owner);
+      return {
+        type: ThanosMessageType.ImportManagedKTAccountResponse,
+      };
+
     case ThanosMessageType.CreateLedgerAccountRequest:
       await Actions.craeteLedgerAccount(req.name, req.derivationPath);
       return {
         type: ThanosMessageType.CreateLedgerAccountResponse,
-      };
-
-    case ThanosMessageType.CreateTrezorAccountRequest:
-      await Actions.createTrezorAccount(req.name, req.derivationPath);
-      return {
-        type: ThanosMessageType.CreateTrezorAccountResponse,
       };
 
     case ThanosMessageType.UpdateSettingsRequest:

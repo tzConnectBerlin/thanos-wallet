@@ -52,13 +52,13 @@ const feeOptions: FeeOption[] = [
     ),
     descriptionI18nKey: "fastFeeDescription",
     type: "fast",
-    amount: 3e-4,
+    amount: 1.5e-4,
   },
   {
     Icon: RocketIcon,
     descriptionI18nKey: "rocketFeeDescription",
     type: "rocket",
-    amount: 5e-4,
+    amount: 2e-4,
   },
   {
     Icon: ({ className, ...rest }) => (
@@ -109,7 +109,7 @@ const AdditionalFeeInput: React.FC<AdditionalFeeInputProps> = (props) => {
             id="feeInputDescription"
             substitutions={[
               <React.Fragment key={0}>
-                <span className="font-normal">{baseFee.toString()}</span>
+                <span className="font-normal">{baseFee.toFixed()}</span>
               </React.Fragment>,
             ]}
           />
@@ -241,7 +241,7 @@ const FeeOptionContent: React.FC<OptionRenderProps<FeeOption>> = ({
 
         {amount && (
           <div className="ml-2 leading-none text-gray-600">
-            <Money>{amount}</Money>{" "}
+            <Money cryptoDecimals={5}>{amount}</Money>{" "}
             <span style={{ fontSize: "0.75em" }}>{XTZ_ASSET.symbol}</span>
           </div>
         )}

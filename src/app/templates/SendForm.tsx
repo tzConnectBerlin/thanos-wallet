@@ -3,16 +3,18 @@ import classNames from "clsx";
 import { useForm, Controller } from "react-hook-form";
 import useSWR from "swr";
 import BigNumber from "bignumber.js";
-import { DEFAULT_FEE } from "@taquito/taquito";
+import { DEFAULT_FEE, WalletOperation } from "@taquito/taquito";
+import type { Estimate } from "@taquito/taquito/dist/types/contract/estimate";
 import {
   ThanosAsset,
   XTZ_ASSET,
-  useAllAccounts,
+  useRelevantAccounts,
   useAccount,
   useTezos,
   useCurrentAsset,
   useBalance,
   useDelegate,
+  useTezosDomainsClient,
   fetchBalance,
   toTransferParams,
   tzToMutez,
@@ -21,13 +23,14 @@ import {
   toPenny,
   hasManager,
   ThanosAssetType,
+  ThanosChainId,
   isKTAddress,
-  useTezosDomains,
-  resolveDomainAddress,
   isDomainNameValid,
-  useNetwork,
-  isTzdnsSupportedNetwork,
+  ThanosAccountType,
+  loadContract,
+  useChainId,
 } from "lib/thanos/front";
+import { transferImplicit, transferToContract } from "lib/michelson";
 import useSafeState from "lib/ui/useSafeState";
 import { T, t } from "lib/i18n/react";
 import {
@@ -100,13 +103,12 @@ type FormProps = {
 const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
   const { registerBackHandler } = useAppEnv();
 
-  const allAccounts = useAllAccounts();
+  const allAccounts = useRelevantAccounts();
   const acc = useAccount();
   const tezos = useTezos();
-  const tezosDomains = useTezosDomains();
-  const { id: networkId } = useNetwork();
+  const domainsClient = useTezosDomainsClient();
 
-  const canUseDomainNames = isTzdnsSupportedNetwork(networkId);
+  const canUseDomainNames = domainsClient.isSupported;
   const accountPkh = acc.publicKeyHash;
 
   const { data: balanceData, mutate: mutateBalance } = useBalance(
@@ -124,6 +126,16 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
   const xtzBalanceNum = xtzBalance.toNumber();
 
   const { data: myBakerPkh } = useDelegate(accountPkh);
+
+  const lazyChainId = useChainId();
+  const deplhiNetwork = React.useMemo(
+    () =>
+      lazyChainId === ThanosChainId.Delphinet ||
+      lazyChainId === ThanosChainId.Mainnet,
+    [lazyChainId]
+  );
+
+  const storageUsedRef = React.useRef(false);
 
   /**
    * Form
@@ -158,13 +170,14 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
   );
 
   const toFilledWithDomain = React.useMemo(
-    () => toValue && isDomainNameValid(toValue),
-    [toValue]
+    () => toValue && isDomainNameValid(toValue, domainsClient),
+    [toValue, domainsClient]
   );
 
   const domainAddressFactory = React.useCallback(
-    () => resolveDomainAddress(tezosDomains, toValue),
-    [tezosDomains, toValue]
+    (_k: string, _checksum: string, toValue: string) =>
+      domainsClient.resolver.resolveNameToAddress(toValue),
+    [domainsClient]
   );
   const { data: resolvedAddress } = useSWR(
     ["tzdns-address", tezos.checksum, toValue],
@@ -227,12 +240,30 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
       }
 
       const [transferParams, manager] = await Promise.all([
-        toTransferParams(tezos, localAsset, to, toPenny(localAsset)),
-        tezos.rpc.getManagerKey(accountPkh),
+        toTransferParams(
+          tezos,
+          localAsset,
+          accountPkh,
+          to,
+          toPenny(localAsset)
+        ),
+        tezos.rpc.getManagerKey(
+          acc.type === ThanosAccountType.ManagedKT ? acc.owner : accountPkh
+        ),
       ]);
 
-      let estmtnMax;
-      if (xtz) {
+      let estmtnMax: Estimate;
+      if (acc.type === ThanosAccountType.ManagedKT) {
+        const michelsonLambda = isKTAddress(to)
+          ? transferToContract
+          : transferImplicit;
+
+        const contract = await loadContract(tezos, acc.publicKeyHash);
+        const transferParams = contract.methods
+          .do(michelsonLambda(to, tzToMutez(balanceBN)))
+          .toTransferParams();
+        estmtnMax = await tezos.estimate.transfer(transferParams);
+      } else if (xtz) {
         const estmtn = await tezos.estimate.transfer(transferParams);
         let amountMax = balanceBN.minus(mutezToTz(estmtn.totalCost));
         if (!hasManager(manager)) {
@@ -244,6 +275,21 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
         });
       } else {
         estmtnMax = await tezos.estimate.transfer(transferParams);
+      }
+
+      // console.info({
+      //   burnFeeMutez: estmtnMax.burnFeeMutez,
+      //   consumedMilligas: estmtnMax.consumedMilligas,
+      //   gasLimit: estmtnMax.gasLimit,
+      //   minimalFeeMutez: estmtnMax.minimalFeeMutez,
+      //   storageLimit: estmtnMax.storageLimit,
+      //   suggestedFeeMutez: estmtnMax.suggestedFeeMutez,
+      //   totalCost: estmtnMax.totalCost,
+      //   usingBaseFeeMutez: estmtnMax.usingBaseFeeMutez,
+      // });
+
+      if (estmtnMax.storageLimit > 0) {
+        storageUsedRef.current = true;
       }
 
       let baseFee = mutezToTz(estmtnMax.totalCost);
@@ -278,6 +324,7 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
       }
     }
   }, [
+    acc,
     tezos,
     localAsset,
     accountPkh,
@@ -334,16 +381,27 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
 
     return localAsset.type === ThanosAssetType.XTZ
       ? (() => {
-          let ma = new BigNumber(balanceNum)
-            .minus(baseFee)
-            .minus(safeFeeValue ?? 0);
-          if (myBakerPkh) {
+          let ma =
+            acc.type === ThanosAccountType.ManagedKT
+              ? new BigNumber(balanceNum)
+              : new BigNumber(balanceNum)
+                  .minus(baseFee)
+                  .minus(safeFeeValue ?? 0);
+          if (myBakerPkh || (deplhiNetwork && storageUsedRef.current)) {
             ma = ma.minus(PENNY);
           }
           return BigNumber.max(ma, 0);
         })()
       : new BigNumber(balanceNum);
-  }, [localAsset.type, balanceNum, baseFee, safeFeeValue, myBakerPkh]);
+  }, [
+    acc.type,
+    localAsset.type,
+    balanceNum,
+    baseFee,
+    safeFeeValue,
+    myBakerPkh,
+    deplhiNetwork,
+  ]);
 
   const maxAmountNum = React.useMemo(
     () => (maxAmount instanceof BigNumber ? maxAmount.toNumber() : maxAmount),
@@ -357,10 +415,11 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
         return t("amountMustBePositive");
       }
       if (!maxAmountNum) return true;
+      const maxAmount = new BigNumber(maxAmountNum);
       const vBN = new BigNumber(v);
       return (
-        vBN.isLessThanOrEqualTo(maxAmountNum) ||
-        t("maximalAmount", maxAmountNum.toString())
+        vBN.isLessThanOrEqualTo(maxAmount) ||
+        t("maximalAmount", maxAmount.toFixed())
       );
     },
     [maxAmountNum, toValue]
@@ -399,8 +458,10 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
         return validateAddress(value);
       }
 
-      if (isDomainNameValid(value)) {
-        const resolved = await resolveDomainAddress(tezosDomains, value);
+      if (isDomainNameValid(value, domainsClient)) {
+        const resolved = await domainsClient.resolver.resolveNameToAddress(
+          value
+        );
         if (!resolved) {
           return `Domain "${value}" doesn't resolve to an address`;
         }
@@ -410,7 +471,7 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
 
       return isAddressValid(value) ? true : "Invalid address or domain name";
     },
-    [tezosDomains, canUseDomainNames]
+    [canUseDomainNames, domainsClient]
   );
 
   const onSubmit = React.useCallback(
@@ -420,18 +481,31 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
       setOperation(null);
 
       try {
-        const transferParams = await toTransferParams(
-          tezos,
-          localAsset,
-          toResolved,
-          amount
-        );
-        const estmtn = await tezos.estimate.transfer(transferParams);
-        const addFee = tzToMutez(feeVal ?? 0);
-        const fee = addFee.plus(estmtn.usingBaseFeeMutez).toNumber();
-        const op = await tezos.wallet
-          .transfer({ ...transferParams, fee } as any)
-          .send();
+        let op: WalletOperation;
+        if (isKTAddress(acc.publicKeyHash)) {
+          const michelsonLambda = isKTAddress(toResolved)
+            ? transferToContract
+            : transferImplicit;
+
+          const contract = await loadContract(tezos, acc.publicKeyHash);
+          op = await contract.methods
+            .do(michelsonLambda(toResolved, tzToMutez(amount)))
+            .send({ amount: 0 });
+        } else {
+          const transferParams = await toTransferParams(
+            tezos,
+            localAsset,
+            accountPkh,
+            toResolved,
+            amount
+          );
+          const estmtn = await tezos.estimate.transfer(transferParams);
+          const addFee = tzToMutez(feeVal ?? 0);
+          const fee = addFee.plus(estmtn.usingBaseFeeMutez).toNumber();
+          op = await tezos.wallet
+            .transfer({ ...transferParams, fee } as any)
+            .send();
+        }
         setOperation(op);
         reset({ to: "", fee: RECOMMENDED_ADD_FEE });
       } catch (err) {
@@ -449,12 +523,14 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
       }
     },
     [
+      acc,
       formState.isSubmitting,
       tezos,
       localAsset,
       setSubmitError,
       setOperation,
       reset,
+      accountPkh,
       toResolved,
     ]
   );
@@ -589,7 +665,7 @@ const Form: React.FC<FormProps> = ({ localAsset, setOperation }) => {
                     className={classNames("underline")}
                     onClick={handleSetMaxAmount}
                   >
-                    {maxAmount.toString()}
+                    {maxAmount.toFixed()}
                   </button>
                   {amountValue && localAsset.type === ThanosAssetType.XTZ ? (
                     <>

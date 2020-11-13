@@ -1,25 +1,43 @@
+import {
+  MetadataParseError,
+  getTokenMetadata,
+  InvalidRpcIdError,
+  InvalidNetworkNameError,
+  InvalidContractAddressError,
+  ContractNotFoundError,
+  FetchURLError,
+} from "@thanos-wallet/tokens";
+import { WalletContract } from "@taquito/taquito";
+import BigNumber from "bignumber.js";
 import * as React from "react";
 import classNames from "clsx";
-import { useForm } from "react-hook-form";
+import { FormContextValues, useForm } from "react-hook-form";
 import { navigate } from "lib/woozie";
 import {
-  ThanosToken,
   ThanosAssetType,
   useTokens,
-  useAssets,
   useCurrentAsset,
   useTezos,
-  isAddressValid,
-  isKTAddress,
   loadContract,
-  fetchBalance,
+  validateContractAddress,
+  useNetwork,
+  assertFA12Token,
 } from "lib/thanos/front";
 import { T, t } from "lib/i18n/react";
+import useSafeState from "lib/ui/useSafeState";
+import { withErrorHumanDelay } from "lib/ui/humanDelay";
 import PageLayout from "app/layouts/PageLayout";
 import FormField from "app/atoms/FormField";
 import FormSubmitButton from "app/atoms/FormSubmitButton";
 import Alert from "app/atoms/Alert";
+import NoSpaceField from "app/atoms/NoSpaceField";
+import Spinner from "app/atoms/Spinner";
 import { ReactComponent as AddIcon } from "app/icons/add.svg";
+import { URL_PATTERN } from "app/defaults";
+
+const INCLUDES_URL_PATTERN = new RegExp(
+  URL_PATTERN.source.substring(1, URL_PATTERN.source.length - 1)
+);
 
 const AddToken: React.FC = () => (
   <PageLayout
@@ -36,15 +54,14 @@ const AddToken: React.FC = () => (
 
 export default AddToken;
 
-const STUB_TEZOS_ADDRESS = "tz1TTXUmQaxe1dTLPtyD4WMQP6aKYK9C8fKw";
 const TOKEN_TYPES = [
   {
-    type: ThanosAssetType.FA1_2,
+    type: ThanosAssetType.FA1_2 as const,
     name: "FA 1.2",
     comingSoon: false,
   },
   {
-    type: ThanosAssetType.FA2,
+    type: ThanosAssetType.FA2 as const,
     name: "FA 2",
     comingSoon: true,
   },
@@ -60,59 +77,177 @@ type FormData = {
 
 const Form: React.FC = () => {
   const { addToken } = useTokens();
-  const { allAssets } = useAssets();
   const { setAssetSymbol } = useCurrentAsset();
   const tezos = useTezos();
+  const { id: networkId } = useNetwork();
 
-  const prevAssetsLengthRef = React.useRef(allAssets.length);
-  React.useEffect(() => {
-    const assetsLength = allAssets.length;
-    if (prevAssetsLengthRef.current < assetsLength) {
-      setAssetSymbol(allAssets[assetsLength - 1].symbol);
-      navigate("/");
-    }
-    prevAssetsLengthRef.current = assetsLength;
-  }, [allAssets, setAssetSymbol]);
-
-  const { register, handleSubmit, errors, formState } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    errors,
+    formState,
+    watch,
+    setValue,
+    triggerValidation,
+  } = useForm<FormData>({
     defaultValues: { decimals: 0 },
   });
-  const [error, setError] = React.useState<React.ReactNode>(null);
+  const contractAddress = watch("address");
+  const [submitError, setSubmitError] = React.useState<React.ReactNode>(null);
+  const [tokenDataError, setTokenDataError] = React.useState<React.ReactNode>(
+    null
+  );
+  const [tokenValidationError, setTokenValidationError] = React.useState<
+    React.ReactNode
+  >(null);
   const [tokenType, setTokenType] = React.useState(TOKEN_TYPES[0]);
+  const [bottomSectionVisible, setBottomSectionVisible] = useSafeState(false);
+  const [loadingToken, setLoadingToken] = React.useState(false);
+
+  React.useEffect(() => {
+    setBottomSectionVisible(false);
+    if (validateContractAddress(contractAddress) !== true) {
+      return;
+    }
+    triggerValidation("address");
+    (async () => {
+      try {
+        setTokenDataError(null);
+        setTokenValidationError(null);
+        setSubmitError(null);
+        setLoadingToken(true);
+
+        let contract: WalletContract;
+        try {
+          contract = await loadContract(tezos, contractAddress, false);
+        } catch (_err) {
+          throw new TokenValidationError(t("contractNotAvailable"));
+        }
+
+        try {
+          await assertFA12Token(contract, tezos);
+        } catch (_err) {
+          throw new TokenValidationError(t("tokenDoesNotMatchStandard"));
+        }
+
+        const tokenData =
+          (await getTokenMetadata(tezos, contractAddress, networkId)) || {};
+        const { symbol, name, description, decimals, onetoken } = tokenData;
+        const tokenSymbol = typeof symbol === "string" ? symbol : "";
+        const tokenName =
+          (typeof name === "string" && name) ||
+          (typeof description === "string" && description) ||
+          "";
+        const tokenDecimals =
+          (decimals instanceof BigNumber && decimals.toNumber()) ||
+          (onetoken instanceof BigNumber &&
+            Math.round(Math.log10(onetoken.toNumber()))) ||
+          0;
+
+        setValue([
+          { symbol: tokenSymbol.substr(0, 5) },
+          { name: tokenName.substr(0, 50) },
+          { decimals: tokenDecimals },
+        ]);
+        setBottomSectionVisible(true);
+      } catch (e) {
+        withErrorHumanDelay(e, () => {
+          if (e instanceof TokenValidationError) {
+            setTokenValidationError(e.message);
+            return;
+          }
+          let errorMessage = e.message;
+          if (e instanceof MetadataParseError) {
+            if (e instanceof InvalidContractAddressError) {
+              errorMessage = (
+                <T
+                  id="referredByTokenContactAddressInvalid"
+                  substitutions={e.payload.contractAddress}
+                />
+              );
+            } else if (e instanceof InvalidNetworkNameError) {
+              errorMessage = (
+                <T
+                  id="someNetworkIsNotCurrent"
+                  substitutions={e.payload.name}
+                />
+              );
+            } else if (e instanceof InvalidRpcIdError) {
+              errorMessage = (
+                <T
+                  id="someNetworkWithChainIdIsNotCurrent"
+                  substitutions={e.payload.chainId}
+                />
+              );
+            } else if (e instanceof ContractNotFoundError) {
+              const { contractAddress: notFoundContractAddress } = e.payload;
+              errorMessage =
+                notFoundContractAddress === contractAddress ? (
+                  <T id="tokenContractNotFound" />
+                ) : (
+                  <T
+                    id="referredByTokenContractNotFound"
+                    substitutions={notFoundContractAddress}
+                  />
+                );
+            } else if (e instanceof FetchURLError) {
+              const url =
+                e.payload.response?.url ||
+                INCLUDES_URL_PATTERN.exec(e.message)?.[0];
+              if (url) {
+                errorMessage = (
+                  <T id="errorWhileFetchingUrl" substitutions={url} />
+                );
+              } else {
+                errorMessage = <T id="unknownParseErrorOccurred" />;
+              }
+            } else {
+              errorMessage = <T id="unknownParseErrorOccurred" />;
+            }
+          } else {
+            errorMessage = <T id="unknownParseErrorOccurred" />;
+          }
+          setValue([{ symbol: "" }, { name: "" }, { decimals: 0 }]);
+          setTokenDataError(errorMessage);
+          setBottomSectionVisible(true);
+        });
+      } finally {
+        setLoadingToken(false);
+      }
+    })();
+  }, [
+    contractAddress,
+    tezos,
+    setValue,
+    setBottomSectionVisible,
+    networkId,
+    tokenType.type,
+    triggerValidation,
+  ]);
+
+  const cleanContractAddress = React.useCallback(() => {
+    setValue("address", "");
+    triggerValidation("address");
+  }, [setValue, triggerValidation]);
 
   const onSubmit = React.useCallback(
     async ({ address, symbol, name, decimals, iconUrl }: FormData) => {
       if (formState.isSubmitting) return;
 
-      setError(null);
+      setSubmitError(null);
       try {
-        let contract;
-        try {
-          contract = await loadContract(tezos, address);
-        } catch (_err) {
-          throw new Error(t("contractNotAvailable"));
-        }
-
-        const token: ThanosToken = {
-          type: tokenType.type as any,
+        addToken({
+          type: tokenType.type,
           address,
           symbol,
           name,
           decimals: decimals || 0,
           iconUrl: iconUrl || undefined,
           fungible: true,
-        };
+        });
 
-        try {
-          if (typeof contract.methods.transfer !== "function") {
-            throw new Error(t("noTransferMethod"));
-          }
-          await fetchBalance(tezos, token, STUB_TEZOS_ADDRESS);
-        } catch (_err) {
-          throw new Error(t("tokenDoesNotMatchStandard"));
-        }
-
-        addToken(token);
+        setAssetSymbol(symbol);
+        setTimeout(() => navigate("/"), 50);
       } catch (err) {
         if (process.env.NODE_ENV === "development") {
           console.error(err);
@@ -120,10 +255,10 @@ const Form: React.FC = () => {
 
         // Human delay
         await new Promise((r) => setTimeout(r, 300));
-        setError(err.message);
+        setSubmitError(err.message);
       }
     },
-    [tokenType, formState.isSubmitting, tezos, addToken, setError]
+    [tokenType, formState.isSubmitting, addToken, setAssetSymbol]
   );
 
   return (
@@ -131,16 +266,6 @@ const Form: React.FC = () => {
       className="w-full max-w-sm mx-auto my-8"
       onSubmit={handleSubmit(onSubmit)}
     >
-      {error && (
-        <Alert
-          type="error"
-          title={t("error")}
-          autoFocus
-          description={error}
-          className="mb-6"
-        />
-      )}
-
       <div className={classNames("mb-6", "flex flex-col")}>
         <h2 className={classNames("mb-4", "leading-tight", "flex flex-col")}>
           <T id="tokenType">
@@ -212,10 +337,17 @@ const Form: React.FC = () => {
         </div>
       </div>
 
-      <FormField
-        ref={register({ required: t("required"), validate: validateAddress })}
+      <NoSpaceField
+        ref={register({
+          required: t("required"),
+          validate: validateContractAddress,
+        })}
         name="address"
         id="addtoken-address"
+        textarea
+        rows={2}
+        cleanable={Boolean(contractAddress)}
+        onClean={cleanContractAddress}
         label={t("address")}
         labelDescription={t("addressOfDeployedTokenContract")}
         placeholder={t("tokenContractPlaceholder")}
@@ -223,11 +355,67 @@ const Form: React.FC = () => {
         containerClassName="mb-4"
       />
 
+      {tokenValidationError && (
+        <Alert
+          type="error"
+          title={t("error")}
+          autoFocus
+          description={tokenValidationError}
+          className="mb-8"
+        />
+      )}
+
+      {tokenDataError && (
+        <Alert
+          type="warn"
+          title={t("failedToParseMetadata")}
+          autoFocus
+          description={tokenDataError}
+          className="mb-8"
+        />
+      )}
+
+      <div
+        className={classNames("w-full", {
+          hidden: !bottomSectionVisible || loadingToken,
+        })}
+      >
+        <BottomSection
+          register={register}
+          errors={errors}
+          formState={formState}
+          submitError={submitError}
+        />
+      </div>
+
+      {loadingToken && (
+        <div className="my-8 w-full flex items-center justify-center pb-4">
+          <div>
+            <Spinner theme="gray" className="w-20" />
+          </div>
+        </div>
+      )}
+    </form>
+  );
+};
+
+type BottomSectionProps = Pick<
+  FormContextValues,
+  "register" | "errors" | "formState"
+> & {
+  submitError?: React.ReactNode;
+};
+
+const BottomSection: React.FC<BottomSectionProps> = (props) => {
+  const { register, errors, formState, submitError } = props;
+
+  return (
+    <>
       <FormField
         ref={register({
           required: t("required"),
           pattern: {
-            value: /^[a-zA-Z0-9]{2,7}$/,
+            value: /^[a-zA-Z0-9]{2,5}$/,
             message: t("tokenSymbolPatternDescription"),
           },
         })}
@@ -244,7 +432,7 @@ const Form: React.FC = () => {
         ref={register({
           required: t("required"),
           pattern: {
-            value: /^[a-zA-Z0-9 _-]{3,12}$/,
+            value: /^[a-zA-Z0-9 _-]{3,50}$/,
             message: t("tokenNamePatternDescription"),
           },
         })}
@@ -291,7 +479,7 @@ const Form: React.FC = () => {
             <T id="iconURL" />{" "}
             <T id="optionalComment">
               {(message) => (
-                <span className="text-sm font-light text-gary-600">
+                <span className="text-sm font-light text-gray-600">
                   {message}
                 </span>
               )}
@@ -304,6 +492,16 @@ const Form: React.FC = () => {
         containerClassName="mb-6"
       />
 
+      {submitError && (
+        <Alert
+          type="error"
+          title={t("error")}
+          autoFocus
+          description={submitError}
+          className="mb-6"
+        />
+      )}
+
       <T id="addToken">
         {(message) => (
           <FormSubmitButton loading={formState.isSubmitting}>
@@ -311,19 +509,8 @@ const Form: React.FC = () => {
           </FormSubmitButton>
         )}
       </T>
-    </form>
+    </>
   );
 };
 
-function validateAddress(value: any) {
-  switch (false) {
-    case isAddressValid(value):
-      return t("invalidAddress");
-
-    case isKTAddress(value):
-      return t("onlyKTContractAddressAllowed");
-
-    default:
-      return true;
-  }
-}
+class TokenValidationError extends Error {}

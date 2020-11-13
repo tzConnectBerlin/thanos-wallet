@@ -12,7 +12,6 @@ import {
   ThanosAccountType,
   useAllAccounts,
   useSetAccountPkh,
-  useThanosClient,
   validateDerivationPath,
 } from "lib/thanos/front";
 import { navigate } from "lib/woozie";
@@ -42,7 +41,6 @@ const DERIVATION_PATHS = [
 ];
 
 const ConnectTrezor: React.FC = () => {
-  const { createTrezorAccount } = useThanosClient();
   const allAccounts = useAllAccounts();
   const setAccountPkh = useSetAccountPkh();
 
@@ -106,7 +104,7 @@ const ConnectTrezor: React.FC = () => {
         setError(err.message);
       }
     },
-    [submitting, createTrezorAccount, setError]
+    [submitting, setError]
   );
 
   return (

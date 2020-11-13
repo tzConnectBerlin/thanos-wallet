@@ -91,12 +91,26 @@ export const [ThanosClientProvider, useThanosClient] = constate(() => {
   const locked = status === ThanosStatus.Locked;
   const ready = status === ThanosStatus.Ready;
 
-  const customNetworks = React.useMemo(() => settings?.customNetworks ?? [], [
+  const customNetworks = React.useMemo(() => {
+    const customNetworksWithoutLambdaContracts = settings?.customNetworks ?? [];
+    return customNetworksWithoutLambdaContracts.map(network => {
+      return {
+      ...network,
+      lambdaContract: settings?.lambdaContracts?.[network.id]
+    };
+  })
+  }, [
     settings,
   ]);
+  const defaultNetworksWithLambdaContracts = React.useMemo(() => {
+    return defaultNetworks.map(network => ({
+      ...network,
+      lambdaContract: network.lambdaContract || settings?.lambdaContracts?.[network.id]
+    }));
+  }, [settings, defaultNetworks]);
   const networks = React.useMemo(
-    () => [...defaultNetworks, ...customNetworks],
-    [defaultNetworks, customNetworks]
+    () => [...defaultNetworksWithLambdaContracts, ...customNetworks],
+    [defaultNetworksWithLambdaContracts, customNetworks]
   );
 
   /**
@@ -226,6 +240,21 @@ export const [ThanosClientProvider, useThanosClient] = constate(() => {
       });
       assertResponse(
         res.type === ThanosMessageType.ImportFundraiserAccountResponse
+      );
+    },
+    []
+  );
+
+  const importKTManagedAccount = React.useCallback(
+    async (address: string, chainId: string, owner: string) => {
+      const res = await request({
+        type: ThanosMessageType.ImportManagedKTAccountRequest,
+        address,
+        chainId,
+        owner,
+      });
+      assertResponse(
+        res.type === ThanosMessageType.ImportManagedKTAccountResponse
       );
     },
     []
@@ -401,7 +430,7 @@ export const [ThanosClientProvider, useThanosClient] = constate(() => {
 
     // Aliases
     status,
-    defaultNetworks,
+    defaultNetworks: defaultNetworksWithLambdaContracts,
     customNetworks,
     networks,
     accounts,
@@ -428,6 +457,7 @@ export const [ThanosClientProvider, useThanosClient] = constate(() => {
     importAccount,
     importMnemonicAccount,
     importFundraiserAccount,
+    importKTManagedAccount,
     createLedgerAccount,
     createTrezorAccount,
     updateSettings,

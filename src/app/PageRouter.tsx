@@ -8,7 +8,6 @@ import ImportWallet from "app/pages/ImportWallet";
 import CreateWallet from "app/pages/CreateWallet";
 import CreateAccount from "app/pages/CreateAccount";
 import ImportAccount from "app/pages/ImportAccount";
-import ImportFaucetFile from "app/pages/ImportFaucetFile";
 import Explore from "app/pages/Explore";
 import Receive from "app/pages/Receive";
 import Send from "app/pages/Send";
@@ -67,7 +66,6 @@ const ROUTE_MAP = Woozie.Router.createMap<RouteContext>([
   ],
   ["/connect-ledger", onlyReady(() => <ConnectLedger />)],
   ["/connect-trezor", onlyReady(() => <ConnectTrezor />)],
-  ["/import-faucet-file", onlyReady(() => <ImportFaucetFile />)],
   ["/receive", onlyReady(() => <Receive />)],
   ["/send", onlyReady(() => <Send />)],
   ["/delegate", onlyReady(() => <Delegate />)],

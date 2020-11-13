@@ -173,19 +173,24 @@ export function importFundraiserAccount(
   });
 }
 
-export function craeteLedgerAccount(name: string, derivationPath?: string) {
+export function importManagedKTAccount(
+  address: string,
+  chainId: string,
+  owner: string
+) {
   return withUnlocked(async ({ vault }) => {
-    const updatedAccounts = await vault.createLedgerAccount(
-      name,
-      derivationPath
+    const updatedAccounts = await vault.importManagedKTAccount(
+      address,
+      chainId,
+      owner
     );
     accountsUpdated(updatedAccounts);
   });
 }
 
-export function createTrezorAccount(name: string, derivationPath?: string) {
+export function craeteLedgerAccount(name: string, derivationPath?: string) {
   return withUnlocked(async ({ vault }) => {
-    const updatedAccounts = await vault.createTrezorAccount(
+    const updatedAccounts = await vault.createLedgerAccount(
       name,
       derivationPath
     );
