@@ -1,18 +1,18 @@
 import * as React from "react";
 import { BcdNetwork } from "lib/better-call-dev";
 import {
-  ThanosAccount,
-  ThanosAsset,
-  ThanosAssetType,
-  ThanosAccountType,
-  ThanosChainId,
-} from "lib/thanos/types";
+  TempleAccount,
+  TempleAsset,
+  TempleAssetType,
+  TempleAccountType,
+  TempleChainId,
+} from "lib/temple/types";
 import { T, t } from "lib/i18n/react";
 import xtzImgUrl from "app/misc/xtz.png";
 
-export const BCD_NETWORKS_NAMES = new Map<ThanosChainId, BcdNetwork>([
-  [ThanosChainId.Mainnet, "mainnet"],
-  [ThanosChainId.Delphinet, "delphinet"],
+export const BCD_NETWORKS_NAMES = new Map<TempleChainId, BcdNetwork>([
+  [TempleChainId.Mainnet, "mainnet"],
+  [TempleChainId.Delphinet, "delphinet"],
 ]);
 
 export class ArtificialError extends Error {}
@@ -53,22 +53,22 @@ export function formatMnemonic(m: string) {
   return m.replace(/\n/g, " ").trim();
 }
 
-export function getAssetIconUrl(asset: ThanosAsset) {
-  return asset.type === ThanosAssetType.XTZ ? xtzImgUrl : asset.iconUrl;
+export function getAssetIconUrl(asset: TempleAsset) {
+  return asset.type === TempleAssetType.XTZ ? xtzImgUrl : asset.iconUrl;
 }
 
-export function getAccountBadgeTitle(account: Pick<ThanosAccount, "type">) {
+export function getAccountBadgeTitle(account: Pick<TempleAccount, "type">) {
   switch (account.type) {
-    case ThanosAccountType.Imported:
+    case TempleAccountType.Imported:
       return t("importedAccount");
 
-    case ThanosAccountType.Ledger:
+    case TempleAccountType.Ledger:
       return t("ledger");
 
-    case ThanosAccountType.ManagedKT:
+    case TempleAccountType.ManagedKT:
       return t("managedKTAccount");
 
-    case ThanosAccountType.WatchOnly:
+    case TempleAccountType.WatchOnly:
       return t("watchOnlyAccount");
 
     default:

@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "Thanos Wallet"
+    "message": "Temple - Tezos Wallet"
   },
   "showIncomingTransactions": {
     "message": "Show Incoming Transactions"
@@ -502,14 +502,14 @@
   "localSandbox": {
     "message": "Local Sandbox"
   },
-  "thanosWalletOptions": {
-    "message": "ThanosWallet | Options"
+  "templeWalletOptions": {
+    "message": "TempleWallet | Options"
   },
   "resetExtension": {
     "message": "Reset Extension"
   },
   "resetExtensionConfirmation": {
-    "message": "Are you sure you want to reset the ThanosWallet?\nAs a result, all your data will be deleted."
+    "message": "Are you sure you want to reset the TempleWallet?\nAs a result, all your data will be deleted."
   },
   "failedToResetExtension": {
     "message": "Failed to reset extension: $errorMessage$",
@@ -557,7 +557,7 @@
     "message": "Create a new Wallet"
   },
   "createNewWalletDescription": {
-    "message": "New to Thanos Wallet? Let's set it up! This will create a new wallet and seed phrase"
+    "message": "New to Temple Wallet? Let's set it up! This will create a new wallet and seed phrase"
   },
   "delegate": {
     "message": "Delegate"
@@ -702,7 +702,7 @@
     "message": "DApps"
   },
   "dAppsDescription": {
-    "message": "In this section you can enable ability to interact with decentralized applications that support Thanos Wallet."
+    "message": "In this section you can enable ability to interact with decentralized applications that support Temple Wallet."
   },
   "networksDescription": {
     "message": "In this section you can add or delete custom Tezos networks."
@@ -723,7 +723,7 @@
     "message": "About"
   },
   "aboutDescription": {
-    "message": "Use this section to view meta info about Thanos Wallet."
+    "message": "Use this section to view meta info about Temple Wallet."
   },
   "unlockWallet": {
     "message": "Unlock the Wallet"

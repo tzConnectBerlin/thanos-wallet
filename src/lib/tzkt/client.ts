@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import { ThanosChainId } from "lib/thanos/types";
+import { TempleChainId } from "lib/temple/types";
 import {
   allInt32ParameterKeys,
   TzktGetOperationsParams,
@@ -10,17 +10,17 @@ import {
 } from "lib/tzkt/types";
 
 const TZKT_API_BASE_URLS = new Map([
-  [ThanosChainId.Mainnet, "https://api.tzkt.io/v1"],
-  [ThanosChainId.Edonet, "https://api.edonet.tzkt.io/"],
-  [ThanosChainId.Delphinet, "https://api.delphinet.tzkt.io/v1"],
-  [ThanosChainId.Carthagenet, "https://api.carthagenet.tzkt.io/v1"],
+  [TempleChainId.Mainnet, "https://api.tzkt.io/v1"],
+  [TempleChainId.Edonet, "https://api.edonet.tzkt.io/"],
+  [TempleChainId.Delphinet, "https://api.delphinet.tzkt.io/v1"],
+  [TempleChainId.Carthagenet, "https://api.carthagenet.tzkt.io/v1"],
 ]);
 
 export const TZKT_BASE_URLS = new Map([
-  [ThanosChainId.Mainnet, "https://tzkt.io"],
-  [ThanosChainId.Edonet, "https://edonet.tzkt.io"],
-  [ThanosChainId.Delphinet, "https://delphinet.tzkt.io"],
-  [ThanosChainId.Carthagenet, "https://carthagenet.tzkt.io"],
+  [TempleChainId.Mainnet, "https://tzkt.io"],
+  [TempleChainId.Edonet, "https://edonet.tzkt.io"],
+  [TempleChainId.Delphinet, "https://delphinet.tzkt.io"],
+  [TempleChainId.Carthagenet, "https://carthagenet.tzkt.io"],
 ]);
 
 const api = axios.create();
@@ -63,22 +63,24 @@ export const getDelegatorRewards = makeQuery<
 >(
   ({ address }) => `/rewards/delegators/${address}`,
   ({ cycle = {}, sort, quote, ...restParams }) => ({
-    ...allInt32ParameterKeys.reduce((cycleParams, key) => ({
-      ...cycleParams,
-      [`cycle.${key}`]: cycle[key]
-    }), {}),
+    ...allInt32ParameterKeys.reduce(
+      (cycleParams, key) => ({
+        ...cycleParams,
+        [`cycle.${key}`]: cycle[key],
+      }),
+      {}
+    ),
     ...(sort ? { [`sort.${sort}`]: "cycle" } : {}),
     quote: quote?.join(","),
-    ...restParams
+    ...restParams,
   })
 );
-
 
 function makeQuery<P extends Record<string, unknown>, R>(
   url: (params: P) => string,
   searchParams: (params: P) => Record<string, unknown>
 ) {
-  return async (chainId: ThanosChainId, params: P) => {
+  return async (chainId: TempleChainId, params: P) => {
     const { data } = await api.get<R>(url(params), {
       baseURL: TZKT_API_BASE_URLS.get(chainId),
       params: searchParams(params),

@@ -3,7 +3,7 @@ import classNames from "clsx";
 import { useForm } from "react-hook-form";
 import { validateMnemonic, generateMnemonic } from "bip39";
 import { Link } from "lib/woozie";
-import { useThanosClient } from "lib/thanos/front";
+import { useTempleClient } from "lib/temple/front";
 import { T, t } from "lib/i18n/react";
 import { useAlert } from "lib/ui/dialog";
 import {
@@ -38,7 +38,7 @@ const NewWallet: React.FC<NewWalletProps> = ({
   ownMnemonic = false,
   title,
 }) => {
-  const { locked, registerWallet, setSeedRevealed } = useThanosClient();
+  const { locked, registerWallet, setSeedRevealed } = useTempleClient();
   const alert = useAlert();
 
   const {
@@ -230,7 +230,7 @@ const NewWallet: React.FC<NewWalletProps> = ({
                   <T id="termsOfUsage" key="termsLink">
                     {(message) => (
                       <a
-                        href="https://thanoswallet.com/terms"
+                        href="https://templewallet.com/terms"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline text-secondary"
@@ -242,7 +242,7 @@ const NewWallet: React.FC<NewWalletProps> = ({
                   <T id="privacyPolicy" key="privacyPolicyLink">
                     {(message) => (
                       <a
-                        href="https://thanoswallet.com/privacy"
+                        href="https://templewallet.com/privacy"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline text-secondary"
@@ -283,7 +283,7 @@ type BackupProps = {
 };
 
 const Backup: React.FC<BackupProps> = ({ data }) => {
-  const { registerWallet, setSeedRevealed } = useThanosClient();
+  const { registerWallet, setSeedRevealed } = useTempleClient();
 
   const {
     register,

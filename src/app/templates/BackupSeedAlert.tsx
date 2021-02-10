@@ -1,14 +1,14 @@
 import * as React from "react";
 import classNames from "clsx";
 import { Link } from "lib/woozie";
-import { useThanosClient } from "lib/thanos/front";
+import { useTempleClient } from "lib/temple/front";
 import { T } from "lib/i18n/react";
 import { useAppEnv } from "app/env";
 import { ReactComponent as HistoryIcon } from "app/icons/history.svg";
 
 const BackupSeedPhrase: React.FC = () => {
   const { fullPage } = useAppEnv();
-  const { ready, seedRevealed } = useThanosClient();
+  const { ready, seedRevealed } = useTempleClient();
 
   return ready && !seedRevealed ? (
     <div className="fixed bottom-0 w-full z-50">

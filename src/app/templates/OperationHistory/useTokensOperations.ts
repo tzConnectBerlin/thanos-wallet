@@ -5,7 +5,7 @@ import {
   TZStatsNetwork,
   TZStatsOperation,
 } from "lib/tzstats";
-import { ThanosToken } from "lib/thanos/types";
+import { TempleToken } from "lib/temple/types";
 import {
   useOpsPagination,
   groupOpsByHash,
@@ -15,7 +15,7 @@ export type GetOperationsParams = {
   accountPkh: string;
   tzStatsNetwork: TZStatsNetwork | null;
   networkId: "mainnet" | "delphinet" | null;
-  asset: ThanosToken;
+  asset: TempleToken;
 };
 
 export default function useTokensOperations({
@@ -83,11 +83,14 @@ export default function useTokensOperations({
       ).reduce((sum, ops) => sum + ops.length, 0);
 
       return {
-        bcdEnd: lastBcdOp ? Math.floor(lastBcdOpTime.getTime() / 1000) : undefined,
+        bcdEnd: lastBcdOp
+          ? Math.floor(lastBcdOpTime.getTime() / 1000)
+          : undefined,
         newBcdOps: groupedBcdOps,
         newTzStatsOps: relevantGroupedTzStatsOps,
         bcdReachedEnd: rawBcdOps.length < pageSize,
-        tzStatsReachedEnd: (relevantTzStatsOpsCount < pageSize) || (rawBcdOps.length < pageSize),
+        tzStatsReachedEnd:
+          relevantTzStatsOpsCount < pageSize || rawBcdOps.length < pageSize,
       };
     },
     [accountPkh, networkId, tzStatsNetwork, asset.address]
