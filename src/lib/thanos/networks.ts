@@ -19,7 +19,7 @@ export const NETWORKS: ThanosNetwork[] = [
     description: "Edo2 testnet",
     lambdaContract: "KT1A64nVZDccAHGAsf1ZyVajXZcbiwjV3SnN",
     type: "test",
-    rpcBaseURL: "https://edonet-tezos.giganode.io",
+    rpcBaseURL: "https://edonet.smartpy.io",
     color: "#FBBF24",
     disabled: false,
   },
